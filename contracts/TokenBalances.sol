@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC777/IERC777Sender.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 
 
-contract Grading is IERC777Recipient, IERC777Sender {
+contract TokenBalances is IERC777Recipient, IERC777Sender {
   using SafeMath for uint;
 
   IERC1820Registry erc1820Contract = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
