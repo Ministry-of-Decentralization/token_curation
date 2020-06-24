@@ -25,6 +25,9 @@ contract ERC900 is IERC900, TokenBalances {
 
     event Staked(address indexed user, uint256 amount, uint256 total, bytes data);
     event Unstaked(address indexed user, uint256 amount, uint256 total, bytes data);
+    event StakingEnabled(uint256 id);
+    event StakingDisabled(uint256 id);
+
 
     constructor(
       address _tokenAddress,
@@ -120,6 +123,20 @@ contract ERC900 is IERC900, TokenBalances {
 
       emit Unstaked(msg.sender, amount, totalStakedForUser[msg.sender], data);
 
+    }
+
+    function enableStaking(bytes calldata data) external override {
+      uint256 targetId = dataToTargetId(data);
+      require(stakingEnabled[targetId] == false, "Staking is already enabled for target");
+      stakingEnabled[targetId] = true;
+      emit StakingEnabled(targetId);
+    }
+
+    function disableStaking(bytes calldata data) external override {
+      uint256 targetId = dataToTargetId(data);
+      require(stakingEnabled[targetId] == true, "Staking is already disabled for target");
+      stakingEnabled[targetId] = false;
+      emit StakingDisabled(targetId);
     }
 
     function totalStaked() external view override returns (uint256) {

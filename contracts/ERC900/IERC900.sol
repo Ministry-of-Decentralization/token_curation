@@ -20,6 +20,8 @@ interface IERC900 {
     function token() external view returns (address);
     function supportsHistory() external pure returns (bool);
 
+    function enableStaking(bytes calldata data) external;
+    function disableStaking(bytes calldata data) external;
     function totalStakedOn(bytes calldata data) external view returns (uint256);
     function totalStakedForOn(address addr, bytes calldata data) external view returns (uint256);
 
