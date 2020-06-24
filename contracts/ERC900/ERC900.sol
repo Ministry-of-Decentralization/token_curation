@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity 0.6.8;
 
 import "./IERC900.sol";
@@ -13,10 +15,10 @@ contract ERC900 is IERC900, TokenBalances {
     mapping(uint256 => uint256) public stakeTotals;
 
     // total staked
-    uint256 public totalStaked = 0;
+    uint256 public totalStakedAmount = 0;
 
     // total staked by user
-    mapping(address => uint256) public totalStakedByUser;
+    mapping(address => uint256) public totalStakedForUser;
 
     // user -> stake target id -> user amount staked to target
     mapping(address => mapping(uint256 => uint256)) public userStakes;
@@ -24,8 +26,34 @@ contract ERC900 is IERC900, TokenBalances {
     event Staked(address indexed user, uint256 amount, uint256 total, bytes data);
     event Unstaked(address indexed user, uint256 amount, uint256 total, bytes data);
 
-    function stake(uint256 amount, bytes calldata data) external {
-      uint256 targetId = uint256(data);
+    constructor(
+      address _tokenAddress,
+      address _owner
+    ) public TokenBalances(_tokenAddress, _owner) {}
+
+    function dataToTargetId(bytes memory data) private pure returns (uint256) {
+        bytes memory targetIdb = bytes(data);
+
+        bytes32 out;
+
+        for (uint i = 0; i < 32; i++) {
+          out |= bytes32(targetIdb[i] & 0xFF) >> (i * 8);
+        }
+        return uint256(out);
+    }
+
+    function totalStakedOn(bytes calldata data) external view override returns (uint256) {
+      uint256 targetId = dataToTargetId(data);
+
+      return stakeTotals[targetId];
+    }
+
+    function totalStakedFor(address addr) external view override returns (uint256) {
+      return totalStakedForUser[addr];
+    }
+
+    function stake(uint256 amount, bytes calldata data) external override {
+      uint256 targetId = dataToTargetId(data);
       require(stakingEnabled[targetId], "Staking is not enabled for target");
       require(balances[msg.sender] >= amount, "Stake amount exceeds user balance");
 
@@ -33,22 +61,22 @@ contract ERC900 is IERC900, TokenBalances {
       balances[msg.sender] = balances[msg.sender].sub(amount);
 
       // add the stake amount to the user -> target stake total
-      userStakes[msg.sender][target.id] = userStakes[msg.sender][target.id].add(amount);
+      userStakes[msg.sender][targetId] = userStakes[msg.sender][targetId].add(amount);
 
       // add the stake amount to the target stake total
       stakeTotals[targetId] = stakeTotals[targetId].add(amount);
 
       // update the total staked
-      totalStaked = totalStaked.add(amount);
+      totalStakedAmount = totalStakedAmount.add(amount);
 
       // update the users total stake
-      totalStakedByUser[msg.sender] = totalStakedByUser[msg.sender].add(amount);
+      totalStakedForUser[msg.sender] = totalStakedForUser[msg.sender].add(amount);
 
-      emit Staked(msg.sender, amount, totalStakedFor(msg.sender), data);
+      emit Staked(msg.sender, amount, totalStakedForUser[msg.sender], data);
     }
 
-    function stakeFor(address user, uint256 amount, bytes calldata data) external{
-      uint256 targetId = uint256(data);
+    function stakeFor(address user, uint256 amount, bytes calldata data) external override {
+      uint256 targetId = dataToTargetId(data);
       require(stakingEnabled[targetId], "Staking is not enabled for target");
       require(balances[msg.sender] >= amount, "Stake amount exceeds user balance");
 
@@ -56,66 +84,57 @@ contract ERC900 is IERC900, TokenBalances {
       balances[msg.sender] = balances[msg.sender].sub(amount);
 
       // add the stake amount to the user -> target stake total
-      userStakes[user][target.id] = userStakes[msg.sender][target.id].add(amount);
+      userStakes[user][targetId] = userStakes[msg.sender][targetId].add(amount);
 
       // add the stake amount to the target stake total
       stakeTotals[targetId] = stakeTotals[targetId].add(amount);
 
       // update the total staked
-      totalStaked = totalStaked.add(amount);
+      totalStakedAmount = totalStakedAmount.add(amount);
 
       // update the users total stake
-      totalStakedByUser[user] = totalStakedByUser[user].add(amount);
+      totalStakedForUser[user] = totalStakedForUser[user].add(amount);
 
-      emit Staked(user, amount, totalStakedFor(user), data);
+      emit Staked(user, amount, totalStakedForUser[user], data);
     }
 
-    function unstake(uint256 amount, bytes calldata data) external {
-      uint256 targetId = uint256(data);
+    function unstake(uint256 amount, bytes calldata data) external override {
+      uint256 targetId = dataToTargetId(data);
       require(stakingEnabled[targetId], "Staking is not enabled for target");
-      require(userStakes[user][target.id] >= amount, "Stake amount exceeds user balance");
+      require(userStakes[msg.sender][targetId] >= amount, "Stake amount exceeds user balance");
 
       // subtract the stake amount the user balance
       balances[msg.sender] = balances[msg.sender].add(amount);
 
       // add the stake amount to the user -> target stake total
-      userStakes[msg.sender][target.id] = userStakes[msg.sender][target.id].sub(amount);
+      userStakes[msg.sender][targetId] = userStakes[msg.sender][targetId].sub(amount);
 
       // add the stake amount to the target stake total
       stakeTotals[targetId] = stakeTotals[targetId].sub(amount);
 
       // update the total staked
-      totalStaked = totalStaked.sub(amount);
+      totalStakedAmount = totalStakedAmount.sub(amount);
 
       // update the users total stake
-      totalStakedByUser[msg.sender] = totalStakedByUser[msg.sender].sub(amount);
+      totalStakedForUser[msg.sender] = totalStakedForUser[msg.sender].sub(amount);
 
-      emit Unstaked(msg.sender, amount, totalStakedFor(msg.sender), data);
+      emit Unstaked(msg.sender, amount, totalStakedForUser[msg.sender], data);
 
     }
 
-    function totalStakedFor(address addr) external view returns (uint256) {
-      return totalStakedByUser(addr);
+    function totalStaked() external view override returns (uint256) {
+      return totalStakedAmount;
     }
 
-    function totalStaked() external view returns (uint256) {
-      return totalStaked;
+    function token() external view override returns (address) {
+      return address(tokenContract);
     }
-
-    function token() external view returns (address) {
-      return tokenContract;
-    }
-    function supportsHistory() external pure returns (bool) {
+    function supportsHistory() external pure override returns (bool) {
       return false;
     }
 
-    function totalStakedOn(bytes calldata data) external view returns (uint) {
-      uint256 targetId = uint256(data);
-      return stakeTotals[targetId];
-    }
-
-    function totalStakedForOn(address addr, bytes calldata data) external view returns (uint256) {
-      uint256 targetId = uint256(data);
+    function totalStakedForOn(address addr, bytes calldata data) external view override returns (uint256) {
+      uint256 targetId = dataToTargetId(data);
       return userStakes[addr][targetId];
     }
 }

@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: MIT
+
 pragma solidity 0.6.8;
 
 
@@ -12,7 +14,7 @@ interface IERC900 {
 
     function stake(uint256 amount, bytes calldata data) external;
     function unstake(uint256 amount, bytes calldata data) external;
-    function stakeFor(address user, uint256 amount, bytes calldata data) external view returns (uint256);
+    function stakeFor(address user, uint256 amount, bytes calldata data) external;
     function totalStakedFor(address addr) external view returns (uint256);
     function totalStaked() external view returns (uint256);
     function token() external view returns (address);
