@@ -15,6 +15,7 @@
     "@openzeppelin/contracts": "^3.0.1",
     "@openzeppelin/test-environment": "^0.1.4",
     "@openzeppelin/test-helpers": "^0.5.5",
+    "bn.js": "^5.1.2",
     "chai": "^4.2.0"
   }
 }

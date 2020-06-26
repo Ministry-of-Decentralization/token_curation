@@ -35,14 +35,21 @@ contract ERC900 is IERC900, TokenBalances {
     ) public TokenBalances(_tokenAddress, _owner) {}
 
     function dataToTargetId(bytes memory data) private pure returns (uint256) {
-        bytes memory targetIdb = bytes(data);
+        // bytes memory targetIdb = bytes(data);
 
-        bytes32 out;
+      uint x;
+      assembly {
+        x := mload(add(data, add(0x20, 0)))
+      }
+      return x;
+    }
 
-        for (uint i = 0; i < 32; i++) {
-          out |= bytes32(targetIdb[i] & 0xFF) >> (i * 8);
-        }
-        return uint256(out);
+    function getLen(bytes memory data) internal pure returns (uint256) {
+      return data.length;
+    }
+
+    function getBytesLength(bytes memory data) public view returns (uint256) {
+      return getLen(data);
     }
 
     function totalStakedOn(bytes calldata data) external view override returns (uint256) {

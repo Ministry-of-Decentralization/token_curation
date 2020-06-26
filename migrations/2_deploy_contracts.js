@@ -1,5 +1,5 @@
 const GTCRToken = artifacts.require("GTCRToken");
-const Grading = artifacts.require("Grading")
+const ERC900 = artifacts.require("ERC900")
 
 require('@openzeppelin/test-helpers/configure')({ provider: web3.currentProvider, environment: 'truffle' });
 
@@ -14,5 +14,7 @@ module.exports = async function(deployer, network, accounts) {
   await deployer.deploy(GTCRToken, 10000, []);
   const token = await GTCRToken.deployed()
 
-  await deployer.deploy(Grading, token.address, accounts[0])
+  
+  await deployer.deploy(ERC900, token.address, accounts[0])
+
 };

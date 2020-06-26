@@ -16,16 +16,13 @@ describe('GTCRToken', function () {
   beforeEach(async function () {
     this.erc1820 = await singletons.ERC1820Registry(registryFunder);
     this.token = await GTCRToken.new(10000, [], { from: creator });
-    console.log(`this token is ${this.token.address}`)
     this.tokenBalances = await TokenBalances.new(this.token.address, creator, {from: creator});
-    console.log(`Token Address :: ${this.token.address}\nTokenBalances Address :: ${this.tokenBalances.address}`)
     await this.token.authorizeOperator(this.tokenBalances.address, {from: creator})
 
   });
 
   it('has a name', async function () {
     const name = await this.token.name()
-    console.log('name in test', name)
     name.should.equal('GTCRToken');
   });
 
@@ -98,15 +95,13 @@ describe('GTCRToken', function () {
       value: TRANSFER_AMOUNT.toString()
     });
 
-    const withdrawReceipt =  await this.tokenBalances.withdraw(TRANSFER_AMOUNT, {from: creator})
+    await this.tokenBalances.withdraw(TRANSFER_AMOUNT, {from: creator})
 
     const creatorBalanceAfterWD = await this.token.balanceOf(creator);
     const tokenBalancesBalanceAfterWD =  await this.token.balanceOf(this.tokenBalances.address);
 
     creatorBalanceAfterWD.should.be.bignumber.equal(totalSupply);
     tokenBalancesBalanceAfterWD.should.be.bignumber.equal("0");
-
-    console.log(`withdraw receipt ${JSON.stringify(withdrawReceipt, null, 2)}`)
 
     /*
     await expectEvent(transferReceipt, 'TokensReceived', {
