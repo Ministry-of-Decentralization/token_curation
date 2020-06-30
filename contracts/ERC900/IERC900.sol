@@ -20,9 +20,14 @@ interface IERC900 {
     function token() external view returns (address);
     function supportsHistory() external pure returns (bool);
 
+    // optional
+    event WeightedStaked(address indexed user, uint256 amount, uint256 total, uint256 weightedAmount, uint256 weightedTotal, bytes data);
+    event WeightedUnstaked(address indexed user, uint256 amount, uint256 total, uint256 weightedAmount, uint256 weightedTotal, bytes data);
+
     function enableStaking(bytes calldata data) external;
     function disableStaking(bytes calldata data) external;
-    function totalStakedOn(bytes calldata data) external view returns (uint256);
-    function totalStakedForOn(address addr, bytes calldata data) external view returns (uint256);
-
+    function totalWeightedStaked() external view returns (uint256);
+    function totalStakedOn(bytes calldata data) external view returns (uint256, uint256);
+    function totalStakedForOn(address addr, bytes calldata data) external view returns (uint256, uint256);
+    function totalWeightedStakedFor(address addr) external view returns (uint256, uint256);
 }

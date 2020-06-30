@@ -3,10 +3,10 @@
 pragma solidity 0.6.8;
 
 import "./IERC900.sol";
-import "./LinearVoting.sol";
+import "./QuadraticVoting.sol";
 import "../TokenBalances.sol";
 
-contract ERC900 is IERC900, LinearVoting, TokenBalances {
+contract ERC900 is IERC900, QuadraticVoting, TokenBalances {
 
     // a Stake is an absolute amount and a weighted amount
     struct Stake {
@@ -36,7 +36,6 @@ contract ERC900 is IERC900, LinearVoting, TokenBalances {
     event StakingEnabled(uint256 id);
     event StakingDisabled(uint256 id);
 
-
     constructor(
       address _tokenAddress,
       address _owner
@@ -63,7 +62,6 @@ contract ERC900 is IERC900, LinearVoting, TokenBalances {
     }
 
     function updateStake(address addr, uint256 amount,uint256 targetId, bytes memory data) internal {
-
       Stake storage userStake = userStakes[addr][targetId];
       // add the stake amount to the user -> target stake total
       userStake.amount = userStake.amount.add(amount);
@@ -114,7 +112,7 @@ contract ERC900 is IERC900, LinearVoting, TokenBalances {
     function unstake(uint256 amount, bytes calldata data) external override {
       uint256 targetId = dataToTargetId(data);
       require(stakingEnabled[targetId], "Staking is not enabled for target");
-      require(userStakes[msg.sender][targetId].amount >= amount, "Stake amount exceeds unstake amount");
+      require(userStakes[msg.sender][targetId].amount >= amount, "Unstake amount exceeds user's staked balance");
 
       // subtract the stake amount the user balance
       balances[msg.sender] = balances[msg.sender].add(amount);
@@ -183,5 +181,4 @@ contract ERC900 is IERC900, LinearVoting, TokenBalances {
     function totalWeightedStakedFor(address addr) external view override returns (uint256, uint256) {
       return (totalStakedForUser[addr].amount, totalStakedForUser[addr].weightedAmount);
     }
-
 }

@@ -12,8 +12,8 @@ const GTCRToken = contract.fromArtifact('GTCRToken');
 const ERC900 =  contract.fromArtifact('ERC900')
 
 const STAKE_TARGET_ID = 284
-const STAKE_TARGET_STR = parseInt('0x'+STAKE_TARGET_ID).toString()// new BN(STAKE_TARGET_ID, 16)
-const STAKE_AMOUNT = 123
+const STAKE_TARGET_STR = parseInt('0x'+STAKE_TARGET_ID).toString()
+const STAKE_AMOUNT = 124
 const getIntPairs = (ints) => {
   const pairs = []
 
@@ -42,7 +42,7 @@ const getIntAsByteString = (int) => {
 }
 
 describe('ERC900', function () {
-  const [registryFunder, creator, operator, receiver] = accounts;
+  const [registryFunder, creator, operator, staker] = accounts;
 
   beforeEach(async function () {
     this.erc1820 = await singletons.ERC1820Registry(registryFunder);
@@ -50,9 +50,15 @@ describe('ERC900', function () {
     this.erc900 = await ERC900.new(this.token.address, creator, {from: creator});
     await this.token.authorizeOperator(this.erc900.address, {from: creator})
 
+    // send token from the creator address into the staking contract address
     await this.token.send(this.erc900.address, 1000, [], {from: creator})
+
+    // send token from the creator address to thes taker address
+    // and then  into the staking contract address
+    await this.token.send(staker, 1000, [], {from: creator})
+    await this.token.send(this.erc900.address, 1000, [], {from: staker})
+
     const creatorBal = await this.erc900.balances(creator)
-    console.log(`token balance for creator on erc900 ${creatorBal}`)
 
   });
 
@@ -74,7 +80,6 @@ describe('ERC900', function () {
       id: STAKE_TARGET_STR
     })
     const stakingEnabled = await this.erc900.stakingEnabled(STAKE_TARGET_ID);
-    console.log(`staking is enabled ${stakingEnabled}`)
     // expect(stakingEnabled).to.be.true
   })
 
@@ -98,7 +103,34 @@ describe('ERC900', function () {
     })
 
     const totalStakedOn = await this.erc900.totalStakedOn(getIntAsBytes(STAKE_TARGET_ID))
-    totalStakedOn.should.be.bignumber.equal(STAKE_AMOUNT.toString())
+    totalStakedOn["0"].should.be.bignumber.equal(STAKE_AMOUNT.toString())
+
+  })
+
+  it('can unstake', async function () {
+    await this.erc900.enableStaking(getIntAsBytes(STAKE_TARGET_ID), {from: creator});
+    await this.erc900.stakingEnabled(STAKE_TARGET_ID);
+    await this.erc900.stake(STAKE_AMOUNT, getIntAsBytes(STAKE_TARGET_ID), {from: creator});
+
+    const totalStakedOn = await this.erc900.totalStakedOn(getIntAsBytes(STAKE_TARGET_ID))
+    totalStakedOn["0"].should.be.bignumber.equal(STAKE_AMOUNT.toString())
+    await this.erc900.unstake(STAKE_AMOUNT/2, getIntAsBytes(STAKE_TARGET_ID), {from: creator});
+    const totalStakedAfterUnstake = await this.erc900.totalStakedOn(getIntAsBytes(STAKE_TARGET_ID))
+    totalStakedAfterUnstake["0"].should.be.bignumber.equal((STAKE_AMOUNT / 2).toString())
+
+
+  })
+
+  it('multiple stakes are cumulative', async function () {
+    const creatorStakeAmount = STAKE_AMOUNT
+    const stakerStakerAmount = STAKE_AMOUNT / 2
+
+    await this.erc900.enableStaking(getIntAsBytes(STAKE_TARGET_ID), {from: creator});
+    await this.erc900.stake(creatorStakeAmount, getIntAsBytes(STAKE_TARGET_ID), {from: creator});
+    await this.erc900.stake(stakerStakerAmount, getIntAsBytes(STAKE_TARGET_ID), {from: staker});
+
+    const totalStakedOn = await this.erc900.totalStakedOn(getIntAsBytes(STAKE_TARGET_ID))
+    totalStakedOn["0"].should.be.bignumber.equal(( creatorStakeAmount + stakerStakerAmount).toString())
 
     // expect(stakingEnabled).to.be.true
   })
