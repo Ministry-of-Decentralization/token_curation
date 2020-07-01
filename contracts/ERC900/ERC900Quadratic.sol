@@ -6,7 +6,7 @@ import "./IERC900.sol";
 import "./QuadraticVoting.sol";
 import "../TokenBalances.sol";
 
-contract ERC900 is IERC900, QuadraticVoting, TokenBalances {
+contract ERC900Quadratic is IERC900, QuadraticVoting, TokenBalances {
 
     // a Stake is an absolute amount and a weighted amount
     struct Stake {
